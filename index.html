@@ -49,6 +49,7 @@ const mosquitoBlue = new Image(); mosquitoBlue.src = "mosquito2.png";
 const mosquitoRed = new Image(); mosquitoRed.src = "mosquito3.png";
 const hudPanel = new Image(); hudPanel.src = "j1.png";
 const startBtnImg = new Image(); startBtnImg.src = "jugar.png";
+const replayBtnImg = new Image(); replayBtnImg.src = "volver_jugar.png";	
 const comboImg = new Image(); comboImg.src = "pre1.png";
 const shieldImg = new Image(); shieldImg.src = "v1.png";
 const freezeImg = new Image(); freezeImg.src = "h1.png";
@@ -763,7 +764,7 @@ function drawEnd(){
     wrap("¡Buen trabajo! Sin criaderos no hay dengue.",W/2,464,294,28);
   }
 
-  buttonImage(W/2-120,522,240,96,"#13a3b8","JUGAR OTRA VEZ");
+  ctx.drawImage(replayBtnImg, W/2-120,522,240,96);
 
   ctx.textAlign="left";
 }
@@ -811,14 +812,14 @@ function press(x,y){
   startMusic();
 
   if(state === "start"){
-    if(x >= W/2-112 && x <= W/2+112 && y >= 535 && y <= 625) resetGame();
+    if(x >= W/2-112 && x <= W/2+112 && y >= 480 && y <= 570) resetGame();
     return;
   }
 
   if(state === "end"){
-    if(x >= W/2-120 && x <= W/2+120 && y >= 590 && y <= 686) resetGame();
-    return;
-  }
+  if(x >= W/2-120 && x <= W/2+120 && y >= 522 && y <= 618) resetGame();
+  return;
+}
 
   player.targetX = x;
   shoot();
