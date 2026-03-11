@@ -520,13 +520,74 @@ function drawHUD(){
   ctx.fillText("Nivel: " + level, 276, 62);
   ctx.fillText("Combo: x" + combo, 276, 82);
 
-  if(x2Timer > 0 && x2Img.complete && x2Img.naturalWidth) ctx.drawImage(x2Img, 362, 18, 42, 42);
-  if(freezeTimer > 0 && freezeImg.complete && freezeImg.naturalWidth) ctx.drawImage(freezeImg, 362, 60, 42, 42);
+  // POWER-UPS VISIBLES
+if(x2Timer > 0){
+  ctx.fillStyle = "rgba(255,255,255,.92)";
+  rr(300,150,52,34,10,true);
 
-  ctx.fillStyle = "#e6f3ff";
-  rr(16,108,W-32,14,10,true);
-  ctx.fillStyle = timeLeft>18 ? "#13a3b8" : "#d64545";
-  rr(16,108,(W-32)*(timeLeft/60),14,10,true);
+  if(x2Img.complete && x2Img.naturalWidth){
+    ctx.drawImage(x2Img, 304, 154, 24, 24);
+  }
+
+  ctx.fillStyle = "#734800";
+  ctx.font = "bold 12px Arial";
+  ctx.fillText("x2", 332, 171);
+}
+
+if(freezeTimer > 0){
+  ctx.fillStyle = "rgba(255,255,255,.92)";
+  rr(358,150,60,34,10,true);
+
+  if(freezeImg.complete && freezeImg.naturalWidth){
+    ctx.drawImage(freezeImg, 362, 154, 24, 24);
+  }
+
+  ctx.fillStyle = "#0f6cbd";
+  ctx.font = "bold 11px Arial";
+  ctx.fillText("ICE", 389, 171);
+}
+
+  // fondo barra tiempo (degradado)
+const gTimeBg = ctx.createLinearGradient(0,128,0,146);
+gTimeBg.addColorStop(0,"rgba(255,255,255,.45)");
+gTimeBg.addColorStop(1,"rgba(255,255,255,.20)");
+ctx.fillStyle = gTimeBg;
+rr(16,128,W-32,18,10,true);
+
+// progreso barra tiempo (degradado)
+const gTime = ctx.createLinearGradient(16,128,W-16,146);
+gTime.addColorStop(0,"#19d3e6");
+gTime.addColorStop(1,"#0e8fa0");
+ctx.fillStyle = gTime;
+rr(16,128,(W-32)*(timeLeft/60),18,10,true);
+const timeWidth = (W-32)*(timeLeft/60);
+
+if(timeWidth > 10){
+  ctx.save();
+
+  ctx.beginPath();
+  rr(16,128,timeWidth,18,10,true);
+  ctx.clip();
+
+  const shineX = 16 + ((performance.now()/2.5) % (timeWidth + 100)) - 100;
+
+  const shine = ctx.createLinearGradient(shineX,128,shineX+100,146);
+  shine.addColorStop(0,"rgba(255,255,255,0)");
+  shine.addColorStop(0.3,"rgba(255,255,255,.25)");
+  shine.addColorStop(0.5,"rgba(255,255,255,.9)");
+  shine.addColorStop(0.7,"rgba(255,255,255,.25)");
+  shine.addColorStop(1,"rgba(255,255,255,0)");
+
+  ctx.fillStyle = shine;
+  ctx.fillRect(16,128,timeWidth,18);
+
+  ctx.restore();
+}	
+
+// borde
+ctx.strokeStyle = "rgba(255,255,255,.6)";
+ctx.lineWidth = 2;
+rr(16,128,W-32,18,10,false);
 }
 
 function drawPlayer(){
@@ -613,10 +674,52 @@ function drawBoss(){
   ctx.drawImage(boss.sprite,-boss.r,-boss.r,boss.r*2,boss.r*2);
   ctx.restore();
 
-  ctx.fillStyle = "rgba(255,255,255,.95)";
-  rr(58,128,W-116,20,10,true);
-  ctx.fillStyle = "#d64545";
-  rr(58,128,(W-116)*(boss.hp/boss.maxHp),20,10,true);
+  // fondo barra jefe (degradado)
+const gBossBg = ctx.createLinearGradient(0,150,0,172);
+gBossBg.addColorStop(0,"rgba(255,255,255,.45)");
+gBossBg.addColorStop(1,"rgba(255,255,255,.20)");
+ctx.fillStyle = gBossBg;
+rr(58,150,W-116,22,10,true);
+
+// progreso jefe (degradado)
+const gBoss = ctx.createLinearGradient(58,150,W-58,172);
+gBoss.addColorStop(0,"#ff6b6b");
+gBoss.addColorStop(1,"#b22222");
+ctx.fillStyle = gBoss;
+rr(58,150,(W-116)*(boss.hp/boss.maxHp),22,10,true);
+const bossWidth = (W-116)*(boss.hp/boss.maxHp);
+
+// brillo fuerte
+if(bossWidth > 8){
+  ctx.save();
+  ctx.beginPath();
+  rr(58,150,bossWidth,22,10,true);
+  ctx.clip();
+
+  const shineX = 58 + ((performance.now()/3) % (bossWidth + 80)) - 80;
+
+  const shine = ctx.createLinearGradient(shineX,150,shineX+80,172);
+  shine.addColorStop(0,"rgba(255,255,255,0)");
+  shine.addColorStop(0.25,"rgba(255,255,255,0.15)");
+  shine.addColorStop(0.5,"rgba(255,255,255,0.85)");
+  shine.addColorStop(0.75,"rgba(255,255,255,0.15)");
+  shine.addColorStop(1,"rgba(255,255,255,0)");
+
+  ctx.fillStyle = shine;
+  ctx.fillRect(58,150,bossWidth,22);
+
+  ctx.restore();
+}	
+
+// borde
+ctx.strokeStyle = "rgba(80,0,0,.45)";
+ctx.lineWidth = 2;
+rr(58,150,W-116,22,10,false);
+
+// texto jefe
+ctx.fillStyle = "#5d1111";
+ctx.font = "bold 14px Arial";
+ctx.fillText("JEFE FINAL",W/2-38,166);
   ctx.fillStyle = "#6a1515";
   ctx.font = "bold 14px Arial";
   ctx.fillText("JEFE FINAL",W/2-38,143);
