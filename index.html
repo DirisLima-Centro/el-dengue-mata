@@ -202,12 +202,12 @@ function spawnBoss(){
   boss = {
     x:W/2,
     y:-110,
-    targetY:220,
+    targetY:280,
     hp:60,
     maxHp:60,
     phase:0,
     spawnTimer:0.9,
-    r:76,
+    r:95,
     sprite:mosquitoImg
   };
   addFloat("¡JEFE FINAL!",W/2,280,"#d64545",34);
@@ -946,7 +946,13 @@ window.addEventListener("keydown", e=>{
     state="end";
     player.hp=0;
   }
-
+// 👇 VER SOLO JEFE (tecla 7)
+  if(e.key==="7"){
+  state="playing";
+  resetGame();
+  spawnBoss();
+  }
+	  
   if((state === "start" || state === "end") && e.key === "Enter"){
     getAudio();
     startMusic();
