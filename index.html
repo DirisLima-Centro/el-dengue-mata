@@ -58,12 +58,15 @@ const spray1Img = new Image(); spray1Img.src = "f1.png";
 const spray2Img = new Image(); spray2Img.src = "f2.png";
 const boomImg = new Image(); boomImg.src = "f3.png";
 const logoDiris = new Image(); logoDiris.src = "logo-minsa-2.png";
+const logoDengue = new Image(); logoDengue.src = "logo-dengue.png";
 const dikyLose = new Image(); 
 dikyLose.src = "D3.png";   // diky triste
 
 const dikyHero = new Image(); 
 dikyHero.src = "D4.png";   // diky héroe	
 const bgm = document.getElementById("bgm");
+const LINK_DENGUE = "https://sites.google.com/dirislimacentro.gob.pe/el-dengue-mata/inicio";
+const LINK_MATERIALES = "https://dirislimacentro.gob.pe/el-dengue-mata/";	
 
 let state = "start";
 let score = 0, timeLeft = 60, combo = 0, bestCombo = 0, level = 1;
@@ -526,7 +529,11 @@ function drawHUD(){
 
 function drawPlayer(){
   const img = state === "playing" ? dikyShoot : dikyIdle;
-  const x = player.x - player.w/2;
+  let x = player.x - player.w/2;
+
+if(state === "end"){
+  x -= 150;   // 👈 solo en pantalla final se mueve
+}
   const y = player.y;
 
   if(img.complete && img.naturalWidth){
@@ -665,6 +672,19 @@ function buttonImage(x,y,w,h,fallbackColor,text){
   }
 }
 
+function simpleButton(x,y,w,h,text,bgColor="#0f6cbd"){
+  ctx.fillStyle = bgColor;
+  rr(x,y,w,h,14,true);
+
+  ctx.fillStyle = "#ffffff";
+  ctx.font = "bold 18px Arial";
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+  ctx.fillText(text, x + w/2, y + h/2);
+
+  ctx.textAlign = "left";
+}	
+	
 function wrap(text,cx,y,maxw,lh){
   const words = text.split(" ");
   let line = "", yy = y;
@@ -717,56 +737,59 @@ function drawStart(){
 
 function drawEnd(){
   overlay();
+  ctx.textAlign = "center";
 
-  ctx.textAlign="center";
-
-  // 👉 SI PIERDE
-  if(player.hp<=0){
-
+  if(player.hp <= 0){
     if(dikyLose.complete && dikyLose.naturalWidth){
-      ctx.drawImage(dikyLose,W/2-76,150,152,165);
+      ctx.drawImage(dikyLose, W/2+20, 160, 130, 140);
     }else{
-      ctx.drawImage(dikyShoot,W/2-76,150,152,165);
+      ctx.drawImage(dikyShoot, W/2-76, 150, 152, 165);
     }
 
-    ctx.fillStyle="#d64545";
-    ctx.font="bold 30px Arial";
-    ctx.fillText("MISIÓN FALLIDA",W/2,344);
+    ctx.fillStyle = "#d64545";
+    ctx.font = "bold 30px Arial";
+	if(logoDengue.complete){
+  ctx.drawImage(logoDengue, W/2-180, 165, 185, 125);
+}  
+    ctx.fillText("MISIÓN FALLIDA", W/2, 344);
+	simpleButton(W/2-115, 470, 230, 42, "Conoce el dengue");
+    simpleButton(W/2-115, 520, 230, 42, "Ver materiales", "#13a3b8");
+	  
+    ctx.fillStyle = "#14324a";
+    ctx.font = "16px Arial";
+    ctx.textAlign = "center";   // 👈 AGREGA ESTO
+    wrap("El dengue mata. Ante síntomas, acude a tu establecimiento de salud más cercano.", W/2, 395, 240, 22);
+    ctx.textAlign = "left";     // 👈 AGREGA ESTO
 
-  }else{
-
-    // 👉 SI GANA (AHORA CON D4)
+    ctx.drawImage(replayBtnImg, W/2-120, 585, 240, 95);
+  } else {
     if(dikyHero.complete && dikyHero.naturalWidth){
-      ctx.drawImage(dikyHero,W/2-76,150,152,165);
+      ctx.drawImage(dikyHero, W/2+40, 145, 130, 140);
     }else{
-      ctx.drawImage(dikyShoot,W/2-76,150,152,165);
+      ctx.drawImage(dikyShoot, W/2-76, 140, 152, 165);
     }
 
-    ctx.fillStyle="#0f6cbd";
-    ctx.font="bold 30px Arial";
-    ctx.fillText("MISIÓN CUMPLIDA",W/2,344);
+    ctx.fillStyle = "#0f6cbd";
+    ctx.font = "bold 30px Arial";
+	if(logoDengue.complete){
+  ctx.drawImage(logoDengue, W/2-165, 165, 165, 110);
+}  
+    ctx.fillText("MISIÓN CUMPLIDA", W/2, 330);
+
+    ctx.fillStyle = "#14324a";
+    ctx.font = "bold 24px Arial";
+    ctx.fillText("Puntaje: " + score, W/2, 368);
+
+    ctx.font = "17px Arial";
+    ctx.fillStyle = "#14324a";
+    wrap("¡Buen trabajo! Sin criaderos no hay dengue.", W/2, 410, 294, 26);
+
+    simpleButton(W/2-115, 470, 230, 42, "Conoce el dengue");
+simpleButton(W/2-115, 520, 230, 42, "Ver materiales", "#13a3b8");
+    ctx.drawImage(replayBtnImg, W/2-120, 585, 240, 95);
   }
 
-  ctx.fillStyle="#14324a";
-  ctx.font="bold 28px Arial";
-  ctx.fillText("Puntaje: "+score,W/2,386);
-
-  ctx.font="bold 20px Arial";
-  ctx.fillStyle="#13a3b8";
-  ctx.fillText(rankName(),W/2,420);
-
-  ctx.font="18px Arial";
-  ctx.fillStyle="#14324a";
-
-  if(player.hp<=0){
-    wrap("El dengue mata. Ante síntomas, acude a tu establecimiento de salud más cercano.",W/2,464,294,28);
-  }else{
-    wrap("¡Buen trabajo! Sin criaderos no hay dengue.",W/2,464,294,28);
-  }
-
-  ctx.drawImage(replayBtnImg, W/2-120,522,240,96);
-
-  ctx.textAlign="left";
+  ctx.textAlign = "left";
 }
 
 function render(){
@@ -816,11 +839,66 @@ function press(x,y){
     return;
   }
 
-  if(state === "end"){
-  if(x >= W/2-120 && x <= W/2+120 && y >= 522 && y <= 618) resetGame();
+if(state === "end"){
+
+  const dengueBtn = {
+  x: W/2 - 115,
+  y: 470,
+  w: 230,
+  h: 42
+};
+
+const materialesBtn = {
+  x: W/2 - 115,
+  y: 520,
+  w: 230,
+  h: 42
+};
+
+  const replayBtn = {
+  x: W/2 - 120,
+  y: 585,
+  w: 240,
+  h: 95
+};
+
+  const pad = 0;
+
+  // Ver materiales
+  if(
+    x >= materialesBtn.x - pad &&
+    x <= materialesBtn.x + materialesBtn.w + pad &&
+    y >= materialesBtn.y - pad &&
+    y <= materialesBtn.y + materialesBtn.h + pad
+  ){
+    window.open(LINK_MATERIALES, "_blank");
+    return;
+  }
+
+  // Conoce el dengue
+  if(
+    x >= dengueBtn.x - pad &&
+    x <= dengueBtn.x + dengueBtn.w + pad &&
+    y >= dengueBtn.y - pad &&
+    y <= dengueBtn.y + dengueBtn.h + pad
+  ){
+    window.open(LINK_DENGUE, "_blank");
+    return;
+  }
+
+  // Volver a jugar
+  if(
+    x >= replayBtn.x - pad &&
+    x <= replayBtn.x + replayBtn.w + pad &&
+    y >= replayBtn.y - pad &&
+    y <= replayBtn.y + replayBtn.h + pad
+  ){
+    resetGame();
+    return;
+  }
+
   return;
 }
-
   player.targetX = x;
   shoot();
 }
@@ -847,6 +925,32 @@ canvas.addEventListener("touchmove", e=>{
 
 window.addEventListener("keydown", e=>{
   keys[e.key] = true;
+  window.addEventListener("keydown", e=>{
+  keys[e.key] = true;
+
+  // 👇 PEGA ESTO EXACTO
+  if(e.key==="9"){   // ver pantalla GANAR
+    state="end";
+    player.hp=5;
+    score=12345;
+  }
+
+  if(e.key==="8"){   // ver pantalla PERDER
+    state="end";
+    player.hp=0;
+  }
+
+  if((state === "start" || state === "end") && e.key === "Enter"){
+    getAudio();
+    startMusic();
+    resetGame();
+  }
+
+  if((e.key === " " || e.code === "Space") && state === "playing"){
+    e.preventDefault();
+    shoot();
+  }
+});	
   if((state === "start" || state === "end") && e.key === "Enter"){
     getAudio();
     startMusic();
