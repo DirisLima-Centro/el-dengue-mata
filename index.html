@@ -536,7 +536,12 @@ function drawPlayer(){
 if(state === "end"){
   x -= 150;   // 👈 solo en pantalla final se mueve
 }
-  const y = player.y;
+  let y = player.y;
+
+// 👇 SOLO sube cuando está jugando
+if(state === "playing"){
+  y -= 60;
+}
 
   if(img.complete && img.naturalWidth){
     ctx.drawImage(img,x,y,player.w,player.h);
