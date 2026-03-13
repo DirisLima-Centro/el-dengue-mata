@@ -33,6 +33,17 @@ canvas{
   touch-action:none;
 }
 </style>
+	
+<!-- Google tag (gtag.js) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-0KX1GLBZ26"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-0KX1GLBZ26');
+</script>
+	
 </head>
 <body>
 <div id="wrap"><canvas id="game" width="430" height="780"></canvas></div>
@@ -69,6 +80,11 @@ dikyHero.src = "D4.png";   // diky héroe
 const bgm = document.getElementById("bgm");
 const LINK_DENGUE = "https://sites.google.com/dirislimacentro.gob.pe/el-dengue-mata/inicio";
 const LINK_MATERIALES = "https://dirislimacentro.gob.pe/el-dengue-mata/";	
+function track(eventName, params = {}){
+  if(typeof gtag === "function"){
+    gtag("event", eventName, params);
+  }
+}
 
 let state = "start";
 let score = 0, timeLeft = 60, combo = 0, bestCombo = 0, level = 1;
@@ -142,6 +158,7 @@ function addPickup(kind,x,y){
 }
 
 function resetGame(){
+  track("inicio_juego");	
   state = "playing";
   score = 0;
   timeLeft = 60;
@@ -453,9 +470,13 @@ function update(dt){
 
   timeLeft -= dt;
   if(timeLeft <= 0){
-    timeLeft = 0;
-    state = "end";
-  }
+  timeLeft = 0;
+  state = "end";
+  track("fin_juego", {
+    resultado: player.hp > 0 ? "gano" : "perdio",
+    puntaje: score,
+    nivel: level
+  });
 }
 
 function rr(x,y,w,h,r,fill=true){
