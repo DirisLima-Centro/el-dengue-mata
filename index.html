@@ -14,36 +14,34 @@
     font-family:Arial,Helvetica,sans-serif
   }
   #wrap{
-  width:100vw;
-  min-height:100dvh;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  padding:10px;
-}
-canvas{
-  width:min(100vw - 20px,430px);
-  height:auto;
-  aspect-ratio:430/780;
-  max-width:430px;
-  max-height:calc(100dvh - 20px);
-  border-radius:24px;
-  box-shadow:0 18px 50px rgba(0,0,0,.22);
-  background:#cfefff;
-  touch-action:none;
-}
+    width:100vw;
+    min-height:100dvh;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    padding:10px;
+  }
+  canvas{
+    width:min(100vw - 20px,430px);
+    height:auto;
+    aspect-ratio:430/780;
+    max-width:430px;
+    max-height:calc(100dvh - 20px);
+    border-radius:24px;
+    box-shadow:0 18px 50px rgba(0,0,0,.22);
+    background:#cfefff;
+    touch-action:none;
+  }
 </style>
-	
+
 <!-- Google tag (gtag.js) -->
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-0KX1GLBZ26"></script>
 <script>
   window.dataLayer = window.dataLayer || [];
   function gtag(){dataLayer.push(arguments);}
   gtag('js', new Date());
-
   gtag('config', 'G-0KX1GLBZ26');
 </script>
-	
 </head>
 <body>
 <div id="wrap"><canvas id="game" width="430" height="780"></canvas></div>
@@ -62,7 +60,7 @@ const mosquitoBlue = new Image(); mosquitoBlue.src = "mosquito2.png";
 const mosquitoRed = new Image(); mosquitoRed.src = "mosquito3.png";
 const hudPanel = new Image(); hudPanel.src = "j1.png";
 const startBtnImg = new Image(); startBtnImg.src = "jugar.png";
-const replayBtnImg = new Image(); replayBtnImg.src = "volver_jugar.png";	
+const replayBtnImg = new Image(); replayBtnImg.src = "volver_jugar.png";
 const comboImg = new Image(); comboImg.src = "pre1.png";
 const shieldImg = new Image(); shieldImg.src = "v1.png";
 const freezeImg = new Image(); freezeImg.src = "h1.png";
@@ -72,18 +70,90 @@ const spray2Img = new Image(); spray2Img.src = "f2.png";
 const boomImg = new Image(); boomImg.src = "f3.png";
 const logoDiris = new Image(); logoDiris.src = "logo-minsa-2.png";
 const logoDengue = new Image(); logoDengue.src = "logo-dengue.png";
-const dikyLose = new Image(); 
-dikyLose.src = "D3.png";   // diky triste
 
-const dikyHero = new Image(); 
-dikyHero.src = "D4.png";   // diky héroe	
+const popupImgs = [
+  "popup1.png",
+  "popup2.png",
+  "popup3.png",
+  "popup4.png",
+  "popup5.png"
+].map(src=>{
+  const img = new Image();
+  img.src = src;
+  return img;
+});
+
+const dikyLose = new Image();
+dikyLose.src = "D3.png";
+
+const dikyHero = new Image();
+dikyHero.src = "D4.png";
+
 const bgm = document.getElementById("bgm");
 const LINK_DENGUE = "https://sites.google.com/dirislimacentro.gob.pe/el-dengue-mata/inicio";
-const LINK_MATERIALES = "https://dirislimacentro.gob.pe/el-dengue-mata/";	
+const LINK_MATERIALES = "https://dirislimacentro.gob.pe/el-dengue-mata/";
+
 function track(eventName, params = {}){
   if(typeof gtag === "function"){
     gtag("event", eventName, params);
   }
+}
+
+async function compartirPuntaje(){
+  try{
+    render();
+
+    const texto =
+      "🎮 Participé en Zancudo Kill\n" +
+      "🏆 Mi puntaje fue: " + score + "\n" +
+      "🦟 ¿Puedes superarme?\n" +
+      "👉 Juega aquí: https://TU-LINK-AQUI.com";
+
+    const blob = await new Promise(resolve => canvas.toBlob(resolve, "image/png"));
+    if(!blob) throw new Error("No se pudo generar la imagen");
+
+    const file = new File([blob], "mi-puntaje-zancudo-kill.png", { type: "image/png" });
+
+    if(navigator.canShare && navigator.canShare({ files: [file] })){
+      await navigator.share({
+        title: "Mi puntaje en Zancudo Kill",
+        text: texto,
+        files: [file]
+      });
+      return;
+    }
+
+    if(navigator.share){
+      await navigator.share({
+        title: "Mi puntaje en Zancudo Kill",
+        text: texto
+      });
+      return;
+    }
+
+    descargarCaptura(blob);
+    const wa = "https://wa.me/?text=" + encodeURIComponent(texto);
+    window.open(wa, "_blank");
+
+  }catch(err){
+    console.error(err);
+    alert("No se pudo compartir automáticamente. Se descargará tu imagen y podrás enviarla por WhatsApp.");
+    try{
+      const blob = await new Promise(resolve => canvas.toBlob(resolve, "image/png"));
+      if(blob) descargarCaptura(blob);
+    }catch(e){}
+  }
+}
+
+function descargarCaptura(blob){
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = "mi-puntaje-zancudo-kill.png";
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
 }
 
 let state = "start";
@@ -94,6 +164,13 @@ let bullets = [], enemies = [], particles = [], floats = [], pickups = [];
 let boss = null;
 let shake = 0, bgPan = 0, comboFlash = 0, shieldFx = 0, freezeTimer = 0, x2Timer = 0;
 let keys = {};
+
+let popupActive = false;
+let popupImgActual = null;
+let popupShown = [false, false, false, false, false];
+const popupScoreSteps = [1400, 2800, 4200, 5600, 7000];
+let hoveredEndButton = null;
+
 let audioCtx = null;
 
 function getAudio(){
@@ -149,7 +226,6 @@ function burst(x,y,color,n=12){
       max:rand(0.3,0.9),
       color
     });
-
   }
 }
 
@@ -158,7 +234,7 @@ function addPickup(kind,x,y){
 }
 
 function resetGame(){
-  track("inicio_juego");	
+  track("inicio_juego");
   state = "playing";
   score = 0;
   timeLeft = 60;
@@ -182,12 +258,19 @@ function resetGame(){
   shieldFx = 0;
   freezeTimer = 0;
   x2Timer = 0;
+
+  popupActive = false;
+  popupImgActual = null;
+  popupShown = [false, false, false, false, false];
+  hoveredEndButton = null;
+  canvas.style.cursor = "default";
+
   last = performance.now();
   startMusic();
 }
 
 function shoot(){
-  if(state !== "playing" || shootTimer > 0) return;
+  if(state !== "playing" || shootTimer > 0 || popupActive) return;
   bullets.push({x:player.x-24,y:player.y+42,vy:-700,r:11,img:Math.random()<0.5?spray1Img:spray2Img});
   bullets.push({x:player.x+28,y:player.y+36,vy:-700,r:11,img:Math.random()<0.5?spray1Img:spray2Img});
   shootTimer = 0.16;
@@ -297,6 +380,17 @@ function update(dt){
   }
 
   if(state !== "playing") return;
+
+  for(let i = 0; i < popupScoreSteps.length; i++){
+    if(score >= popupScoreSteps[i] && !popupShown[i] && !popupActive){
+      popupImgActual = popupImgs[i];
+      popupActive = true;
+      popupShown[i] = true;
+      return;
+    }
+  }
+
+  if(popupActive) return;
 
   level = 1 + Math.floor((60-timeLeft)/12);
 
@@ -470,14 +564,14 @@ function update(dt){
 
   timeLeft -= dt;
   if(timeLeft <= 0){
-  timeLeft = 0;
-  state = "end";
-  track("fin_juego", {
-    resultado: player.hp > 0 ? "gano" : "perdio",
-    puntaje: score,
-    nivel: level
-  });
-}
+    timeLeft = 0;
+    state = "end";
+    track("fin_juego", {
+      resultado: player.hp > 0 ? "gano" : "perdio",
+      puntaje: score,
+      nivel: level
+    });
+  }
 }
 
 function rr(x,y,w,h,r,fill=true){
@@ -542,89 +636,81 @@ function drawHUD(){
   ctx.fillText("Nivel: " + level, 276, 62);
   ctx.fillText("Combo: x" + combo, 276, 82);
 
-  // POWER-UPS VISIBLES
-if(x2Timer > 0){
-  ctx.fillStyle = "rgba(255,255,255,.92)";
-  rr(300,150,52,34,10,true);
+  if(x2Timer > 0){
+    ctx.fillStyle = "rgba(255,255,255,.92)";
+    rr(300,150,52,34,10,true);
 
-  if(x2Img.complete && x2Img.naturalWidth){
-    ctx.drawImage(x2Img, 304, 154, 24, 24);
+    if(x2Img.complete && x2Img.naturalWidth){
+      ctx.drawImage(x2Img, 304, 154, 24, 24);
+    }
+
+    ctx.fillStyle = "#734800";
+    ctx.font = "bold 12px Arial";
+    ctx.fillText("x2", 332, 171);
   }
 
-  ctx.fillStyle = "#734800";
-  ctx.font = "bold 12px Arial";
-  ctx.fillText("x2", 332, 171);
-}
+  if(freezeTimer > 0){
+    ctx.fillStyle = "rgba(255,255,255,.92)";
+    rr(358,150,60,34,10,true);
 
-if(freezeTimer > 0){
-  ctx.fillStyle = "rgba(255,255,255,.92)";
-  rr(358,150,60,34,10,true);
+    if(freezeImg.complete && freezeImg.naturalWidth){
+      ctx.drawImage(freezeImg, 362, 154, 24, 24);
+    }
 
-  if(freezeImg.complete && freezeImg.naturalWidth){
-    ctx.drawImage(freezeImg, 362, 154, 24, 24);
+    ctx.fillStyle = "#0f6cbd";
+    ctx.font = "bold 11px Arial";
+    ctx.fillText("ICE", 389, 171);
   }
 
-  ctx.fillStyle = "#0f6cbd";
-  ctx.font = "bold 11px Arial";
-  ctx.fillText("ICE", 389, 171);
-}
+  const gTimeBg = ctx.createLinearGradient(0,128,0,146);
+  gTimeBg.addColorStop(0,"rgba(255,255,255,.45)");
+  gTimeBg.addColorStop(1,"rgba(255,255,255,.20)");
+  ctx.fillStyle = gTimeBg;
+  rr(16,128,W-32,18,10,true);
 
-  // fondo barra tiempo (degradado)
-const gTimeBg = ctx.createLinearGradient(0,128,0,146);
-gTimeBg.addColorStop(0,"rgba(255,255,255,.45)");
-gTimeBg.addColorStop(1,"rgba(255,255,255,.20)");
-ctx.fillStyle = gTimeBg;
-rr(16,128,W-32,18,10,true);
+  const gTime = ctx.createLinearGradient(16,128,W-16,146);
+  gTime.addColorStop(0,"#19d3e6");
+  gTime.addColorStop(1,"#0e8fa0");
+  ctx.fillStyle = gTime;
+  rr(16,128,(W-32)*(timeLeft/60),18,10,true);
+  const timeWidth = (W-32)*(timeLeft/60);
 
-// progreso barra tiempo (degradado)
-const gTime = ctx.createLinearGradient(16,128,W-16,146);
-gTime.addColorStop(0,"#19d3e6");
-gTime.addColorStop(1,"#0e8fa0");
-ctx.fillStyle = gTime;
-rr(16,128,(W-32)*(timeLeft/60),18,10,true);
-const timeWidth = (W-32)*(timeLeft/60);
+  if(timeWidth > 10){
+    ctx.save();
+    ctx.beginPath();
+    rr(16,128,timeWidth,18,10,true);
+    ctx.clip();
 
-if(timeWidth > 10){
-  ctx.save();
+    const shineX = 16 + ((performance.now()/2.5) % (timeWidth + 100)) - 100;
+    const shine = ctx.createLinearGradient(shineX,128,shineX+100,146);
+    shine.addColorStop(0,"rgba(255,255,255,0)");
+    shine.addColorStop(0.3,"rgba(255,255,255,.25)");
+    shine.addColorStop(0.5,"rgba(255,255,255,.9)");
+    shine.addColorStop(0.7,"rgba(255,255,255,.25)");
+    shine.addColorStop(1,"rgba(255,255,255,0)");
 
-  ctx.beginPath();
-  rr(16,128,timeWidth,18,10,true);
-  ctx.clip();
+    ctx.fillStyle = shine;
+    ctx.fillRect(16,128,timeWidth,18);
+    ctx.restore();
+  }
 
-  const shineX = 16 + ((performance.now()/2.5) % (timeWidth + 100)) - 100;
-
-  const shine = ctx.createLinearGradient(shineX,128,shineX+100,146);
-  shine.addColorStop(0,"rgba(255,255,255,0)");
-  shine.addColorStop(0.3,"rgba(255,255,255,.25)");
-  shine.addColorStop(0.5,"rgba(255,255,255,.9)");
-  shine.addColorStop(0.7,"rgba(255,255,255,.25)");
-  shine.addColorStop(1,"rgba(255,255,255,0)");
-
-  ctx.fillStyle = shine;
-  ctx.fillRect(16,128,timeWidth,18);
-
-  ctx.restore();
-}	
-
-// borde
-ctx.strokeStyle = "rgba(255,255,255,.6)";
-ctx.lineWidth = 2;
-rr(16,128,W-32,18,10,false);
+  ctx.strokeStyle = "rgba(255,255,255,.6)";
+  ctx.lineWidth = 2;
+  rr(16,128,W-32,18,10,false);
 }
 
 function drawPlayer(){
   const img = state === "playing" ? dikyShoot : dikyIdle;
   let x = player.x - player.w/2;
 
-if(state === "end"){
-  x -= 150;   // 👈 solo en pantalla final se mueve
-}
+  if(state === "end"){
+    x -= 150;
+  }
   let y = player.y;
 
-// 👇 SOLO sube cuando está jugando
-if(state === "playing"){
-  y -= 5;
-}
+  if(state === "playing"){
+    y -= 5;
+  }
 
   if(img.complete && img.naturalWidth){
     ctx.drawImage(img,x,y,player.w,player.h);
@@ -634,10 +720,30 @@ if(state === "playing"){
   }
 
   if(shieldFx > 0){
-    ctx.strokeStyle = "rgba(19,163,184,.95)";
-    ctx.lineWidth = 5;
+    const cx = player.x;
+    const cy = player.y + 82;
+    const r = 68 + Math.sin(performance.now()/180)*2;
+
+    const glow = ctx.createRadialGradient(cx,cy,r-20,cx,cy,r+25);
+    glow.addColorStop(0,"rgba(0,200,255,0)");
+    glow.addColorStop(.5,"rgba(0,200,255,.18)");
+    glow.addColorStop(1,"rgba(0,200,255,0)");
+
+    ctx.fillStyle = glow;
     ctx.beginPath();
-    ctx.arc(player.x, player.y+82, 70 + Math.sin(performance.now()/120)*3, 0, Math.PI*2);
+    ctx.arc(cx,cy,r+25,0,Math.PI*2);
+    ctx.fill();
+
+    ctx.strokeStyle = "rgba(0,200,255,.85)";
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.arc(cx,cy,r,0,Math.PI*2);
+    ctx.stroke();
+
+    ctx.strokeStyle = "rgba(255,255,255,.8)";
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.arc(cx,cy,r-4,Math.sin(performance.now()/500),Math.sin(performance.now()/500)+1.2);
     ctx.stroke();
   }
 }
@@ -696,52 +802,45 @@ function drawBoss(){
   ctx.drawImage(boss.sprite,-boss.r,-boss.r,boss.r*2,boss.r*2);
   ctx.restore();
 
-  // fondo barra jefe (degradado)
-const gBossBg = ctx.createLinearGradient(0,150,0,172);
-gBossBg.addColorStop(0,"rgba(255,255,255,.45)");
-gBossBg.addColorStop(1,"rgba(255,255,255,.20)");
-ctx.fillStyle = gBossBg;
-rr(58,150,W-116,22,10,true);
+  const gBossBg = ctx.createLinearGradient(0,150,0,172);
+  gBossBg.addColorStop(0,"rgba(255,255,255,.45)");
+  gBossBg.addColorStop(1,"rgba(255,255,255,.20)");
+  ctx.fillStyle = gBossBg;
+  rr(58,150,W-116,22,10,true);
 
-// progreso jefe (degradado)
-const gBoss = ctx.createLinearGradient(58,150,W-58,172);
-gBoss.addColorStop(0,"#ff6b6b");
-gBoss.addColorStop(1,"#b22222");
-ctx.fillStyle = gBoss;
-rr(58,150,(W-116)*(boss.hp/boss.maxHp),22,10,true);
-const bossWidth = (W-116)*(boss.hp/boss.maxHp);
+  const gBoss = ctx.createLinearGradient(58,150,W-58,172);
+  gBoss.addColorStop(0,"#ff6b6b");
+  gBoss.addColorStop(1,"#b22222");
+  ctx.fillStyle = gBoss;
+  rr(58,150,(W-116)*(boss.hp/boss.maxHp),22,10,true);
+  const bossWidth = (W-116)*(boss.hp/boss.maxHp);
 
-// brillo fuerte
-if(bossWidth > 8){
-  ctx.save();
-  ctx.beginPath();
-  rr(58,150,bossWidth,22,10,true);
-  ctx.clip();
+  if(bossWidth > 8){
+    ctx.save();
+    ctx.beginPath();
+    rr(58,150,bossWidth,22,10,true);
+    ctx.clip();
 
-  const shineX = 58 + ((performance.now()/3) % (bossWidth + 80)) - 80;
+    const shineX = 58 + ((performance.now()/3) % (bossWidth + 80)) - 80;
+    const shine = ctx.createLinearGradient(shineX,150,shineX+80,172);
+    shine.addColorStop(0,"rgba(255,255,255,0)");
+    shine.addColorStop(0.25,"rgba(255,255,255,0.15)");
+    shine.addColorStop(0.5,"rgba(255,255,255,0.85)");
+    shine.addColorStop(0.75,"rgba(255,255,255,0.15)");
+    shine.addColorStop(1,"rgba(255,255,255,0)");
 
-  const shine = ctx.createLinearGradient(shineX,150,shineX+80,172);
-  shine.addColorStop(0,"rgba(255,255,255,0)");
-  shine.addColorStop(0.25,"rgba(255,255,255,0.15)");
-  shine.addColorStop(0.5,"rgba(255,255,255,0.85)");
-  shine.addColorStop(0.75,"rgba(255,255,255,0.15)");
-  shine.addColorStop(1,"rgba(255,255,255,0)");
+    ctx.fillStyle = shine;
+    ctx.fillRect(58,150,bossWidth,22);
+    ctx.restore();
+  }
 
-  ctx.fillStyle = shine;
-  ctx.fillRect(58,150,bossWidth,22);
+  ctx.strokeStyle = "rgba(80,0,0,.45)";
+  ctx.lineWidth = 2;
+  rr(58,150,W-116,22,10,false);
 
-  ctx.restore();
-}	
-
-// borde
-ctx.strokeStyle = "rgba(80,0,0,.45)";
-ctx.lineWidth = 2;
-rr(58,150,W-116,22,10,false);
-
-// texto jefe
-ctx.fillStyle = "#5d1111";
-ctx.font = "bold 14px Arial";
-ctx.fillText("JEFE FINAL",W/2-38,166);
+  ctx.fillStyle = "#5d1111";
+  ctx.font = "bold 14px Arial";
+  ctx.fillText("JEFE FINAL",W/2-38,166);
   ctx.fillStyle = "#6a1515";
   ctx.font = "bold 14px Arial";
   ctx.fillText("JEFE FINAL",W/2-38,143);
@@ -804,19 +903,101 @@ function buttonImage(x,y,w,h,fallbackColor,text){
   }
 }
 
-function simpleButton(x,y,w,h,text,bgColor="#0f6cbd"){
-  ctx.fillStyle = bgColor;
+function simpleButton(x,y,w,h,text,bgColor="#0f6cbd", iconType="info", hovered=false){
+  const t = performance.now();
+  const lift = hovered ? -2 : 0;
+  const glow = hovered ? 1 : 0;
+  const pulse = hovered ? Math.sin(t / 160) * 0.8 : 0;
+
+  y = y + lift + pulse;
+
+  ctx.fillStyle = hovered ? "rgba(0,0,0,.28)" : "rgba(0,0,0,.18)";
+  rr(x, y + h - 5, w, 7, 14, true);
+
+  const g = ctx.createLinearGradient(x,y,x,y+h);
+  g.addColorStop(0, bgColor);
+  g.addColorStop(1, bgColor);
+  ctx.fillStyle = g;
   rr(x,y,w,h,14,true);
 
+  if(glow){
+    ctx.fillStyle = "rgba(255,255,255,.10)";
+    rr(x-2,y-2,w+4,h+4,16,true);
+  }
+
+  const shine = ctx.createLinearGradient(x,y,x,y+h);
+  shine.addColorStop(0,"rgba(255,255,255,.35)");
+  shine.addColorStop(.45,"rgba(255,255,255,.08)");
+  shine.addColorStop(1,"rgba(255,255,255,0)");
+  ctx.fillStyle = shine;
+  rr(x,y,w,h,14,true);
+
+  ctx.strokeStyle = hovered ? "rgba(255,255,255,.75)" : "rgba(255,255,255,.35)";
+  ctx.lineWidth = hovered ? 2 : 1.5;
+  rr(x,y,w,h,14,false);
+
+  const ix = x + 24;
+  const iy = y + h/2;
+
+  ctx.fillStyle = "rgba(255,255,255,.18)";
+  ctx.beginPath();
+  ctx.arc(ix, iy, 13, 0, Math.PI*2);
+  ctx.fill();
+
+  ctx.strokeStyle = "#ffffff";
+  ctx.lineWidth = 2;
   ctx.fillStyle = "#ffffff";
-  ctx.font = "bold 18px Arial";
+
+  if(iconType === "info"){
+    ctx.beginPath();
+    ctx.arc(ix, iy-5, 1.8, 0, Math.PI*2);
+    ctx.fill();
+
+    ctx.lineWidth = 2.4;
+    ctx.beginPath();
+    ctx.moveTo(ix, iy-1);
+    ctx.lineTo(ix, iy+7);
+    ctx.stroke();
+  }
+
+  if(iconType === "materials"){
+    ctx.strokeRect(ix-5, iy-7, 10, 14);
+    ctx.beginPath();
+    ctx.moveTo(ix-3, iy-3);
+    ctx.lineTo(ix+3, iy-3);
+    ctx.moveTo(ix-3, iy);
+    ctx.lineTo(ix+3, iy);
+    ctx.moveTo(ix-3, iy+3);
+    ctx.lineTo(ix+2, iy+3);
+    ctx.stroke();
+  }
+
+  if(iconType === "share"){
+    ctx.beginPath();
+    ctx.arc(ix-5, iy, 2.2, 0, Math.PI*2);
+    ctx.arc(ix+5, iy-5, 2.2, 0, Math.PI*2);
+    ctx.arc(ix+5, iy+5, 2.2, 0, Math.PI*2);
+    ctx.fill();
+
+    ctx.lineWidth = 1.8;
+    ctx.beginPath();
+    ctx.moveTo(ix-3, iy-1);
+    ctx.lineTo(ix+3, iy-4);
+    ctx.moveTo(ix-3, iy+1);
+    ctx.lineTo(ix+3, iy+4);
+    ctx.stroke();
+  }
+
+  ctx.fillStyle = "#ffffff";
+  ctx.font = hovered ? "bold 18px Arial" : "bold 17px Arial";
   ctx.textAlign = "center";
   ctx.textBaseline = "middle";
-  ctx.fillText(text, x + w/2, y + h/2);
+  ctx.fillText(text, x + w/2 + 12, y + h/2);
 
   ctx.textAlign = "left";
-}	
-	
+  ctx.textBaseline = "alphabetic";
+}
+
 function wrap(text,cx,y,maxw,lh){
   const words = text.split(" ");
   let line = "", yy = y;
@@ -831,6 +1012,26 @@ function wrap(text,cx,y,maxw,lh){
     }
   }
   ctx.fillText(line.trim(),cx,yy);
+}
+
+function getEndButtons(){
+  const dengueBtn = { id:"dengue", x: W/2 - 115, y: 450, w: 230, h: 42 };
+  const materialesBtn = { id:"materiales", x: W/2 - 115, y: 500, w: 230, h: 42 };
+
+  const compartirBtn = player.hp > 0
+    ? { id:"compartir", x: W/2 - 115, y: 550, w: 230, h: 42 }
+    : null;
+
+  const replayBtn = player.hp > 0
+    ? { id:"replay", x: W/2 - 120, y: 625, w: 240, h: 95 }
+    : { id:"replay", x: W/2 - 120, y: 575, w: 240, h: 95 };
+
+  return {
+    dengueBtn,
+    materialesBtn,
+    compartirBtn,
+    replayBtn
+  };
 }
 
 function drawStart(){
@@ -855,9 +1056,6 @@ function drawStart(){
   ctx.fillStyle = "#14324a";
   wrap("Dispara a los zancudos, evita trampas, junta power-ups y derrota al jefe final en SJL.", W/2, 400, 294, 28);
 
-  ctx.font = "bold 18px Arial";
-  ctx.fillStyle = "#2f9e44";
-  
   buttonImage(W/2-112, 480, 224, 90, "#0f6cbd", "JUGAR");
 
   ctx.font = "15px Arial";
@@ -880,20 +1078,21 @@ function drawEnd(){
 
     ctx.fillStyle = "#d64545";
     ctx.font = "bold 30px Arial";
-	if(logoDengue.complete){
-  ctx.drawImage(logoDengue, W/2-180, 165, 185, 125);
-}  
+    if(logoDengue.complete){
+      ctx.drawImage(logoDengue, W/2-180, 165, 185, 125);
+    }
     ctx.fillText("MISIÓN FALLIDA", W/2, 344);
-	simpleButton(W/2-115, 470, 230, 42, "Conoce el dengue");
-    simpleButton(W/2-115, 520, 230, 42, "Ver materiales", "#13a3b8");
-	  
+
     ctx.fillStyle = "#14324a";
     ctx.font = "16px Arial";
-    ctx.textAlign = "center";   // 👈 AGREGA ESTO
+    ctx.textAlign = "center";
     wrap("El dengue mata. Ante síntomas, acude a tu establecimiento de salud más cercano.", W/2, 395, 240, 22);
-    ctx.textAlign = "left";     // 👈 AGREGA ESTO
+    ctx.textAlign = "left";
 
-    ctx.drawImage(replayBtnImg, W/2-120, 585, 240, 95);
+    simpleButton(W/2-115, 450, 230, 42, "Conoce el dengue", "#0f6cbd", "info", hoveredEndButton === "dengue");
+    simpleButton(W/2-115, 500, 230, 42, "Ver materiales", "#13a3b8", "materials", hoveredEndButton === "materiales");
+
+    ctx.drawImage(replayBtnImg, W/2-120, 575, 240, 95);
   } else {
     if(dikyHero.complete && dikyHero.naturalWidth){
       ctx.drawImage(dikyHero, W/2+40, 145, 130, 140);
@@ -903,9 +1102,9 @@ function drawEnd(){
 
     ctx.fillStyle = "#0f6cbd";
     ctx.font = "bold 30px Arial";
-	if(logoDengue.complete){
-  ctx.drawImage(logoDengue, W/2-165, 165, 165, 110);
-}  
+    if(logoDengue.complete){
+      ctx.drawImage(logoDengue, W/2-165, 165, 165, 110);
+    }
     ctx.fillText("MISIÓN CUMPLIDA", W/2, 330);
 
     ctx.fillStyle = "#14324a";
@@ -916,12 +1115,73 @@ function drawEnd(){
     ctx.fillStyle = "#14324a";
     wrap("¡Buen trabajo! Sin criaderos no hay dengue.", W/2, 410, 294, 26);
 
-    simpleButton(W/2-115, 470, 230, 42, "Conoce el dengue");
-simpleButton(W/2-115, 520, 230, 42, "Ver materiales", "#13a3b8");
-    ctx.drawImage(replayBtnImg, W/2-120, 585, 240, 95);
+    simpleButton(W/2-115, 450, 230, 42, "Conoce el dengue", "#0f6cbd", "info", hoveredEndButton === "dengue");
+    simpleButton(W/2-115, 500, 230, 42, "Ver materiales", "#13a3b8", "materials", hoveredEndButton === "materiales");
+    simpleButton(W/2-115, 550, 230, 42, "Compartir puntaje", "#25D366", "share", hoveredEndButton === "compartir");
+
+    ctx.drawImage(replayBtnImg, W/2-120, 625, 240, 95);
   }
 
   ctx.textAlign = "left";
+}
+
+function drawPopup(){
+  if(!popupActive || !popupImgActual) return;
+
+  ctx.fillStyle = "rgba(0,0,0,.35)";
+  ctx.fillRect(0,0,W,H);
+
+  const maxW = 280;
+  const maxH = 470;
+
+  const scale = Math.min(
+    maxW / popupImgActual.width,
+    maxH / popupImgActual.height
+  );
+
+  const w = popupImgActual.width * scale;
+  const h = popupImgActual.height * scale;
+
+  const x = W/2 - w/2;
+  const y = H/2 - h/2 - 20;
+
+  ctx.drawImage(popupImgActual, x, y, w, h);
+
+  const btnW = 210;
+  const btnH = 46;
+  const btnX = W/2 - btnW/2;
+  const btnY = y + h + 16;
+
+  const gBtn = ctx.createLinearGradient(btnX,btnY,btnX,btnY+btnH);
+  gBtn.addColorStop(0,"#27a2ff");
+  gBtn.addColorStop(1,"#0f6cbd");
+
+  ctx.fillStyle = gBtn;
+  rr(btnX, btnY, btnW, btnH, 16, true);
+
+  ctx.fillStyle = "rgba(0,0,0,.25)";
+  rr(btnX, btnY+btnH-6, btnW, 6, 16, true);
+
+  const shine = ctx.createLinearGradient(btnX,btnY,btnX,btnY+btnH);
+  shine.addColorStop(0,"rgba(255,255,255,.55)");
+  shine.addColorStop(.4,"rgba(255,255,255,.15)");
+  shine.addColorStop(1,"rgba(255,255,255,0)");
+
+  ctx.fillStyle = shine;
+  rr(btnX, btnY, btnW, btnH, 16, true);
+
+  ctx.strokeStyle = "rgba(255,255,255,.6)";
+  ctx.lineWidth = 2;
+  rr(btnX, btnY, btnW, btnH, 16, false);
+
+  ctx.fillStyle = "#ffffff";
+  ctx.font = "bold 16px Arial";
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+  ctx.fillText("CONTINUAR JUGANDO", W/2, btnY + btnH/2);
+
+  ctx.textAlign = "left";
+  ctx.textBaseline = "alphabetic";
 }
 
 function render(){
@@ -943,6 +1203,7 @@ function render(){
 
   if(state === "start") drawStart();
   if(state === "end") drawEnd();
+  drawPopup();
 }
 
 function loop(ts){
@@ -966,71 +1227,99 @@ function press(x,y){
   getAudio();
   startMusic();
 
+  if(popupActive && popupImgActual){
+    const maxW = 280;
+    const maxH = 470;
+
+    const scale = Math.min(
+      maxW / popupImgActual.width,
+      maxH / popupImgActual.height
+    );
+
+    const w = popupImgActual.width * scale;
+    const h = popupImgActual.height * scale;
+
+    const popupY = H/2 - h/2 - 20;
+
+    const btnW = 210;
+    const btnH = 46;
+    const btnX = W/2 - btnW/2;
+    const btnY = popupY + h + 16;
+
+    if(
+      x >= btnX &&
+      x <= btnX + btnW &&
+      y >= btnY &&
+      y <= btnY + btnH
+    ){
+      popupActive = false;
+    }
+    return;
+  }
+
   if(state === "start"){
     if(x >= W/2-112 && x <= W/2+112 && y >= 480 && y <= 570) resetGame();
     return;
   }
 
-if(state === "end"){
+  if(state === "end"){
+    const dengueBtn = { x: W/2 - 115, y: 450, w: 230, h: 42 };
+    const materialesBtn = { x: W/2 - 115, y: 500, w: 230, h: 42 };
 
-  const dengueBtn = {
-  x: W/2 - 115,
-  y: 470,
-  w: 230,
-  h: 42
-};
+    const compartirBtn = player.hp > 0
+      ? { x: W/2 - 115, y: 550, w: 230, h: 42 }
+      : null;
 
-const materialesBtn = {
-  x: W/2 - 115,
-  y: 520,
-  w: 230,
-  h: 42
-};
+    const replayBtn = player.hp > 0
+      ? { x: W/2 - 120, y: 625, w: 240, h: 95 }
+      : { x: W/2 - 120, y: 575, w: 240, h: 95 };
 
-  const replayBtn = {
-  x: W/2 - 120,
-  y: 585,
-  w: 240,
-  h: 95
-};
+    const pad = 0;
 
-  const pad = 0;
+    if(
+      x >= materialesBtn.x - pad &&
+      x <= materialesBtn.x + materialesBtn.w + pad &&
+      y >= materialesBtn.y - pad &&
+      y <= materialesBtn.y + materialesBtn.h + pad
+    ){
+      window.open(LINK_MATERIALES, "_blank");
+      return;
+    }
 
-  // Ver materiales
-  if(
-    x >= materialesBtn.x - pad &&
-    x <= materialesBtn.x + materialesBtn.w + pad &&
-    y >= materialesBtn.y - pad &&
-    y <= materialesBtn.y + materialesBtn.h + pad
-  ){
-    window.open(LINK_MATERIALES, "_blank");
+    if(
+      compartirBtn &&
+      x >= compartirBtn.x - pad &&
+      x <= compartirBtn.x + compartirBtn.w + pad &&
+      y >= compartirBtn.y - pad &&
+      y <= compartirBtn.y + compartirBtn.h + pad
+    ){
+      compartirPuntaje();
+      return;
+    }
+
+    if(
+      x >= dengueBtn.x - pad &&
+      x <= dengueBtn.x + dengueBtn.w + pad &&
+      y >= dengueBtn.y - pad &&
+      y <= dengueBtn.y + dengueBtn.h + pad
+    ){
+      window.open(LINK_DENGUE, "_blank");
+      return;
+    }
+
+    if(
+      x >= replayBtn.x - pad &&
+      x <= replayBtn.x + replayBtn.w + pad &&
+      y >= replayBtn.y - pad &&
+      y <= replayBtn.y + replayBtn.h + pad
+    ){
+      resetGame();
+      return;
+    }
+
     return;
   }
 
-  // Conoce el dengue
-  if(
-    x >= dengueBtn.x - pad &&
-    x <= dengueBtn.x + dengueBtn.w + pad &&
-    y >= dengueBtn.y - pad &&
-    y <= dengueBtn.y + dengueBtn.h + pad
-  ){
-    window.open(LINK_DENGUE, "_blank");
-    return;
-  }
-
-  // Volver a jugar
-  if(
-    x >= replayBtn.x - pad &&
-    x <= replayBtn.x + replayBtn.w + pad &&
-    y >= replayBtn.y - pad &&
-    y <= replayBtn.y + replayBtn.h + pad
-  ){
-    resetGame();
-    return;
-  }
-
-  return;
-}
   player.targetX = x;
   shoot();
 }
@@ -1041,7 +1330,31 @@ canvas.addEventListener("mousedown", e=>{
 });
 
 canvas.addEventListener("mousemove", e=>{
-  if(state === "playing") player.targetX = pos(e).x;
+  const p = pos(e);
+
+  if(state === "playing" && !popupActive){
+    player.targetX = p.x;
+    hoveredEndButton = null;
+    canvas.style.cursor = "default";
+    return;
+  }
+
+  if(state === "end"){
+    const { dengueBtn, materialesBtn, compartirBtn } = getEndButtons();
+    hoveredEndButton = null;
+
+    const inBox = (btn) => btn && p.x >= btn.x && p.x <= btn.x + btn.w && p.y >= btn.y && p.y <= btn.y + btn.h;
+
+    if(inBox(dengueBtn)) hoveredEndButton = "dengue";
+    else if(inBox(materialesBtn)) hoveredEndButton = "materiales";
+    else if(inBox(compartirBtn)) hoveredEndButton = "compartir";
+
+    canvas.style.cursor = hoveredEndButton ? "pointer" : "default";
+    return;
+  }
+
+  hoveredEndButton = null;
+  canvas.style.cursor = "default";
 });
 
 canvas.addEventListener("touchstart", e=>{
@@ -1051,50 +1364,36 @@ canvas.addEventListener("touchstart", e=>{
 }, {passive:false});
 
 canvas.addEventListener("touchmove", e=>{
-  if(state === "playing") player.targetX = pos(e).x;
+  if(state === "playing" && !popupActive) player.targetX = pos(e).x;
   e.preventDefault();
 }, {passive:false});
 
 window.addEventListener("keydown", e=>{
   keys[e.key] = true;
-  window.addEventListener("keydown", e=>{
-  keys[e.key] = true;
 
-  // 👇 PEGA ESTO EXACTO
-  if(e.key==="9"){   // ver pantalla GANAR
+  if(e.key==="9"){
     state="end";
     player.hp=5;
     score=12345;
   }
 
-  if(e.key==="8"){   // ver pantalla PERDER
+  if(e.key==="8"){
     state="end";
     player.hp=0;
   }
-// 👇 VER SOLO JEFE (tecla 7)
+
   if(e.key==="7"){
-  state="playing";
-  resetGame();
-  spawnBoss();
+    resetGame();
+    spawnBoss();
   }
-	  
+
   if((state === "start" || state === "end") && e.key === "Enter"){
     getAudio();
     startMusic();
     resetGame();
   }
 
-  if((e.key === " " || e.code === "Space") && state === "playing"){
-    e.preventDefault();
-    shoot();
-  }
-});	
-  if((state === "start" || state === "end") && e.key === "Enter"){
-    getAudio();
-    startMusic();
-    resetGame();
-  }
-  if((e.key === " " || e.code === "Space") && state === "playing"){
+  if((e.key === " " || e.code === "Space") && state === "playing" && !popupActive){
     e.preventDefault();
     shoot();
   }
