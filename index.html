@@ -77,21 +77,19 @@ const popupImgs = [
   "popup3.png",
   "popup4.png",
   "popup5.png"
-].map(src=>{
+].map(src => {
   const img = new Image();
   img.src = src;
   return img;
 });
 
-const dikyLose = new Image();
-dikyLose.src = "D3.png";
-
-const dikyHero = new Image();
-dikyHero.src = "D4.png";
+const dikyLose = new Image(); dikyLose.src = "D3.png";
+const dikyHero = new Image(); dikyHero.src = "D4.png";
 
 const bgm = document.getElementById("bgm");
 const LINK_DENGUE = "https://sites.google.com/dirislimacentro.gob.pe/el-dengue-mata/inicio";
 const LINK_MATERIALES = "https://dirislimacentro.gob.pe/el-dengue-mata/";
+const LINK_JUEGO = "https://TU-LINK-AQUI.com"; // <-- REEMPLAZA POR TU LINK REAL
 
 function track(eventName, params = {}){
   if(typeof gtag === "function"){
@@ -104,10 +102,10 @@ async function compartirPuntaje(){
     render();
 
     const texto =
-      "🎮 Participé en Zancudo Kill\n" +
+      "🎮 Participé en el juego educativo contra el dengue de DIRIS Lima Centro\n" +
       "🏆 Mi puntaje fue: " + score + "\n" +
       "🦟 ¿Puedes superarme?\n" +
-      "👉 Juega aquí: https://TU-LINK-AQUI.com";
+      "👉 Juega aquí: " + LINK_JUEGO;
 
     const blob = await new Promise(resolve => canvas.toBlob(resolve, "image/png"));
     if(!blob) throw new Error("No se pudo generar la imagen");
@@ -137,7 +135,7 @@ async function compartirPuntaje(){
 
   }catch(err){
     console.error(err);
-    alert("No se pudo compartir automáticamente. Se descargará tu imagen y podrás enviarla por WhatsApp.");
+    alert("No se pudo compartir automáticamente. Se descargará tu imagen y podrás enviarla manualmente.");
     try{
       const blob = await new Promise(resolve => canvas.toBlob(resolve, "image/png"));
       if(blob) descargarCaptura(blob);
@@ -170,6 +168,7 @@ let popupImgActual = null;
 let popupShown = [false, false, false, false, false];
 const popupScoreSteps = [1400, 2800, 4200, 5600, 7000];
 let hoveredEndButton = null;
+let scoreAnim = 0;
 
 let audioCtx = null;
 
@@ -263,6 +262,7 @@ function resetGame(){
   popupImgActual = null;
   popupShown = [false, false, false, false, false];
   hoveredEndButton = null;
+  scoreAnim = 0;
   canvas.style.cursor = "default";
 
   last = performance.now();
@@ -350,10 +350,10 @@ function applyEnemyDeath(e){
 }
 
 function rankName(){
-  if(score >= 850) return "Brigadista DIRIS Legendario";
-  if(score >= 600) return "Brigadista DIRIS Élite";
-  if(score >= 350) return "Brigadista DIRIS";
-  if(score >= 180) return "Protector de SJL";
+  if(score >= 6500) return "Brigadista DIRIS Legendario";
+  if(score >= 5000) return "Brigadista DIRIS Élite";
+  if(score >= 3500) return "Brigadista DIRIS";
+  if(score >= 2000) return "Protector de la Comunidad";
   return "Aprendiz Anti Dengue";
 }
 
@@ -377,6 +377,13 @@ function update(dt){
   floats = floats.filter(f => (f.life-=dt) > 0);
   for(const f of floats){
     f.y -= 40*dt;
+  }
+
+  if(state === "end" && player.hp > 0){
+    if(scoreAnim < score){
+      scoreAnim += Math.ceil((score - scoreAnim) / 8);
+      if(scoreAnim > score) scoreAnim = score;
+    }
   }
 
   if(state !== "playing") return;
@@ -639,11 +646,9 @@ function drawHUD(){
   if(x2Timer > 0){
     ctx.fillStyle = "rgba(255,255,255,.92)";
     rr(300,150,52,34,10,true);
-
     if(x2Img.complete && x2Img.naturalWidth){
       ctx.drawImage(x2Img, 304, 154, 24, 24);
     }
-
     ctx.fillStyle = "#734800";
     ctx.font = "bold 12px Arial";
     ctx.fillText("x2", 332, 171);
@@ -652,11 +657,9 @@ function drawHUD(){
   if(freezeTimer > 0){
     ctx.fillStyle = "rgba(255,255,255,.92)";
     rr(358,150,60,34,10,true);
-
     if(freezeImg.complete && freezeImg.naturalWidth){
       ctx.drawImage(freezeImg, 362, 154, 24, 24);
     }
-
     ctx.fillStyle = "#0f6cbd";
     ctx.font = "bold 11px Arial";
     ctx.fillText("ICE", 389, 171);
@@ -702,15 +705,9 @@ function drawHUD(){
 function drawPlayer(){
   const img = state === "playing" ? dikyShoot : dikyIdle;
   let x = player.x - player.w/2;
-
-  if(state === "end"){
-    x -= 150;
-  }
+  if(state === "end") x -= 150;
   let y = player.y;
-
-  if(state === "playing"){
-    y -= 5;
-  }
+  if(state === "playing") y -= 5;
 
   if(img.complete && img.naturalWidth){
     ctx.drawImage(img,x,y,player.w,player.h);
@@ -881,10 +878,10 @@ function drawCombo(){
 
 function overlay(){
   ctx.fillStyle = "rgba(255,255,255,.92)";
-  rr(28,144,W-56,470,28,true);
+  rr(24,118,W-48,540,28,true);
   ctx.strokeStyle = "rgba(15,108,189,.15)";
   ctx.lineWidth = 2;
-  rr(28,144,W-56,470,28,false);
+  rr(24,118,W-48,540,28,false);
 }
 
 function buttonImage(x,y,w,h,fallbackColor,text){
@@ -952,7 +949,6 @@ function simpleButton(x,y,w,h,text,bgColor="#0f6cbd", iconType="info", hovered=f
     ctx.beginPath();
     ctx.arc(ix, iy-5, 1.8, 0, Math.PI*2);
     ctx.fill();
-
     ctx.lineWidth = 2.4;
     ctx.beginPath();
     ctx.moveTo(ix, iy-1);
@@ -1015,23 +1011,23 @@ function wrap(text,cx,y,maxw,lh){
 }
 
 function getEndButtons(){
-  const dengueBtn = { id:"dengue", x: W/2 - 115, y: 450, w: 230, h: 42 };
-  const materialesBtn = { id:"materiales", x: W/2 - 115, y: 500, w: 230, h: 42 };
+  const dengueBtn = player.hp > 0
+    ? { id:"dengue", x: W/2 - 115, y: 485, w: 230, h: 42 }
+    : { id:"dengue", x: W/2 - 115, y: 438, w: 230, h: 42 };
+
+  const materialesBtn = player.hp > 0
+    ? { id:"materiales", x: W/2 - 115, y: 535, w: 230, h: 42 }
+    : { id:"materiales", x: W/2 - 115, y: 488, w: 230, h: 42 };
 
   const compartirBtn = player.hp > 0
-    ? { id:"compartir", x: W/2 - 115, y: 550, w: 230, h: 42 }
+    ? { id:"compartir", x: W/2 - 115, y: 585, w: 230, h: 42 }
     : null;
 
   const replayBtn = player.hp > 0
-    ? { id:"replay", x: W/2 - 120, y: 625, w: 240, h: 95 }
-    : { id:"replay", x: W/2 - 120, y: 575, w: 240, h: 95 };
+    ? { id:"replay", x: W/2 - 120, y: 655, w: 240, h: 95 }
+    : { id:"replay", x: W/2 - 120, y: 565, w: 240, h: 95 };
 
-  return {
-    dengueBtn,
-    materialesBtn,
-    compartirBtn,
-    replayBtn
-  };
+  return { dengueBtn, materialesBtn, compartirBtn, replayBtn };
 }
 
 function drawStart(){
@@ -1054,7 +1050,7 @@ function drawStart(){
 
   ctx.font = "18px Arial";
   ctx.fillStyle = "#14324a";
-  wrap("Dispara a los zancudos, evita trampas, junta power-ups y derrota al jefe final en SJL.", W/2, 400, 294, 28);
+  wrap("Elimina zancudos, evita criaderos y suma acciones contra el dengue en DIRIS Lima Centro.", W/2, 400, 294, 28);
 
   buttonImage(W/2-112, 480, 224, 90, "#0f6cbd", "JUGAR");
 
@@ -1071,7 +1067,7 @@ function drawEnd(){
 
   if(player.hp <= 0){
     if(dikyLose.complete && dikyLose.naturalWidth){
-      ctx.drawImage(dikyLose, W/2+20, 160, 130, 140);
+      ctx.drawImage(dikyLose, W/2+20, 150, 130, 140);
     }else{
       ctx.drawImage(dikyShoot, W/2-76, 150, 152, 165);
     }
@@ -1079,23 +1075,28 @@ function drawEnd(){
     ctx.fillStyle = "#d64545";
     ctx.font = "bold 30px Arial";
     if(logoDengue.complete){
-      ctx.drawImage(logoDengue, W/2-180, 165, 185, 125);
+      ctx.drawImage(logoDengue, W/2-180, 155, 185, 125);
     }
-    ctx.fillText("MISIÓN FALLIDA", W/2, 344);
+    ctx.fillText("MISIÓN FALLIDA", W/2, 328);
 
     ctx.fillStyle = "#14324a";
     ctx.font = "16px Arial";
     ctx.textAlign = "center";
-    wrap("El dengue mata. Ante síntomas, acude a tu establecimiento de salud más cercano.", W/2, 395, 240, 22);
+    wrap("El dengue mata. Ante síntomas, acude a tu establecimiento de salud más cercano.", W/2, 365, 240, 22);
     ctx.textAlign = "left";
 
-    simpleButton(W/2-115, 450, 230, 42, "Conoce el dengue", "#0f6cbd", "info", hoveredEndButton === "dengue");
-    simpleButton(W/2-115, 500, 230, 42, "Ver materiales", "#13a3b8", "materials", hoveredEndButton === "materiales");
+    simpleButton(W/2-115, 438, 230, 42, "Conoce el dengue", "#0f6cbd", "info", hoveredEndButton === "dengue");
+    simpleButton(W/2-115, 488, 230, 42, "Ver materiales", "#13a3b8", "materials", hoveredEndButton === "materiales");
 
-    ctx.drawImage(replayBtnImg, W/2-120, 575, 240, 95);
+    ctx.drawImage(replayBtnImg, W/2-120, 565, 240, 95);
+
+    if(dikyIdle.complete && dikyIdle.naturalWidth){
+      ctx.drawImage(dikyIdle, 28, 598, 90, 106);
+    }
+
   } else {
     if(dikyHero.complete && dikyHero.naturalWidth){
-      ctx.drawImage(dikyHero, W/2+40, 145, 130, 140);
+      ctx.drawImage(dikyHero, W/2+40, 135, 130, 140);
     }else{
       ctx.drawImage(dikyShoot, W/2-76, 140, 152, 165);
     }
@@ -1103,23 +1104,69 @@ function drawEnd(){
     ctx.fillStyle = "#0f6cbd";
     ctx.font = "bold 30px Arial";
     if(logoDengue.complete){
-      ctx.drawImage(logoDengue, W/2-165, 165, 165, 110);
+      ctx.drawImage(logoDengue, W/2-165, 155, 165, 110);
     }
-    ctx.fillText("MISIÓN CUMPLIDA", W/2, 330);
+    ctx.fillText("MISIÓN CUMPLIDA", W/2, 300);
 
-    ctx.fillStyle = "#14324a";
-    ctx.font = "bold 24px Arial";
-    ctx.fillText("Puntaje: " + score, W/2, 368);
+    let stars = 1;
+    if(score >= 2000) stars = 2;
+    if(score >= 3500) stars = 3;
+    if(score >= 5000) stars = 4;
+    if(score >= 6500) stars = 5;
+
+    ctx.save();
+    ctx.font = "24px Arial";
+    ctx.textAlign = "center";
+    ctx.fillStyle = "#FFD700";
+    ctx.shadowColor = "rgba(255,215,0,.8)";
+    ctx.shadowBlur = 10;
+    ctx.fillText("⭐".repeat(stars), W/2, 332);
+    ctx.restore();
+
+    ctx.save();
+    ctx.textAlign = "center";
+    ctx.shadowColor = "rgba(255,180,0,.45)";
+    ctx.shadowBlur = 10;
+
+    const gradScore = ctx.createLinearGradient(0, 345, 0, 390);
+    gradScore.addColorStop(0, "#fff3a6");
+    gradScore.addColorStop(0.45, "#ffc107");
+    gradScore.addColorStop(1, "#f57c00");
+
+    ctx.fillStyle = gradScore;
+    ctx.font = "bold 34px Arial";
+    ctx.fillText(scoreAnim, W/2, 372);
+
+    ctx.shadowBlur = 0;
+    ctx.strokeStyle = "rgba(90,55,0,.65)";
+    ctx.lineWidth = 2.2;
+    ctx.strokeText(scoreAnim, W/2, 372);
+
+    ctx.fillStyle = "#6b4b00";
+    ctx.font = "bold 16px Arial";
+    ctx.fillText("PUNTAJE", W/2, 395);
+    ctx.restore();
+
+    ctx.save();
+    ctx.textAlign = "center";
+    ctx.fillStyle = "#0f6cbd";
+    ctx.font = "bold 18px Arial";
+    ctx.fillText(rankName(), W/2, 418);
+    ctx.restore();
 
     ctx.font = "17px Arial";
     ctx.fillStyle = "#14324a";
-    wrap("¡Buen trabajo! Sin criaderos no hay dengue.", W/2, 410, 294, 26);
+    wrap("¡Buen trabajo! Sin criaderos no hay zancudos y sin zancudos no hay dengue.", W/2, 442, 325, 20);
 
-    simpleButton(W/2-115, 450, 230, 42, "Conoce el dengue", "#0f6cbd", "info", hoveredEndButton === "dengue");
-    simpleButton(W/2-115, 500, 230, 42, "Ver materiales", "#13a3b8", "materials", hoveredEndButton === "materiales");
-    simpleButton(W/2-115, 550, 230, 42, "Compartir puntaje", "#25D366", "share", hoveredEndButton === "compartir");
+    simpleButton(W/2-115, 485, 230, 42, "Conoce el dengue", "#0f6cbd", "info", hoveredEndButton === "dengue");
+    simpleButton(W/2-115, 535, 230, 42, "Ver materiales", "#13a3b8", "materials", hoveredEndButton === "materiales");
+    simpleButton(W/2-115, 585, 230, 42, "Compartir puntaje", "#25D366", "share", hoveredEndButton === "compartir");
 
-    ctx.drawImage(replayBtnImg, W/2-120, 625, 240, 95);
+    ctx.drawImage(replayBtnImg, W/2-120, 655, 240, 95);
+
+    if(dikyIdle.complete && dikyIdle.naturalWidth){
+      ctx.drawImage(dikyIdle, 28, 598, 90, 106);
+    }
   }
 
   ctx.textAlign = "left";
@@ -1185,20 +1232,24 @@ function drawPopup(){
 }
 
 function render(){
+  ctx.clearRect(0,0,W,H);
+
   ctx.save();
   if(shake > 0) ctx.translate(rand(-shake,shake),rand(-shake,shake));
   drawBG();
-  drawEnemies();
-  drawBoss();
-  drawPickups();
-  drawBullets();
-  drawParticles();
-  drawPlayer();
-  drawFloats();
+
   if(state === "playing"){
+    drawEnemies();
+    drawBoss();
+    drawPickups();
+    drawBullets();
+    drawParticles();
+    drawPlayer();
+    drawFloats();
     drawHUD();
     drawCombo();
   }
+
   ctx.restore();
 
   if(state === "start") drawStart();
@@ -1238,7 +1289,6 @@ function press(x,y){
 
     const w = popupImgActual.width * scale;
     const h = popupImgActual.height * scale;
-
     const popupY = H/2 - h/2 - 20;
 
     const btnW = 210;
@@ -1263,16 +1313,21 @@ function press(x,y){
   }
 
   if(state === "end"){
-    const dengueBtn = { x: W/2 - 115, y: 450, w: 230, h: 42 };
-    const materialesBtn = { x: W/2 - 115, y: 500, w: 230, h: 42 };
+    const dengueBtn = player.hp > 0
+      ? { x: W/2 - 115, y: 485, w: 230, h: 42 }
+      : { x: W/2 - 115, y: 438, w: 230, h: 42 };
+
+    const materialesBtn = player.hp > 0
+      ? { x: W/2 - 115, y: 535, w: 230, h: 42 }
+      : { x: W/2 - 115, y: 488, w: 230, h: 42 };
 
     const compartirBtn = player.hp > 0
-      ? { x: W/2 - 115, y: 550, w: 230, h: 42 }
+      ? { x: W/2 - 115, y: 585, w: 230, h: 42 }
       : null;
 
     const replayBtn = player.hp > 0
-      ? { x: W/2 - 120, y: 625, w: 240, h: 95 }
-      : { x: W/2 - 120, y: 575, w: 240, h: 95 };
+      ? { x: W/2 - 120, y: 655, w: 240, h: 95 }
+      : { x: W/2 - 120, y: 565, w: 240, h: 95 };
 
     const pad = 0;
 
@@ -1375,6 +1430,7 @@ window.addEventListener("keydown", e=>{
     state="end";
     player.hp=5;
     score=12345;
+    scoreAnim=12345;
   }
 
   if(e.key==="8"){
