@@ -722,14 +722,47 @@ function addPickup(kind,x,y){
   pickups.push({kind,x,y,vy:110,r:28,wobble:rand(0,Math.PI*2)});
 }
 	
-function generarCodigoPartida(){
-  const random = Math.random()
-    .toString(36)
-    .substring(2,6)
-    .toUpperCase();
+function crearFirma(puntaje){
+  const clave = "DLC-DENGUE-2026";
+  const texto = clave + "-" + puntaje;
 
-  codigoPartida = "DNG-" + score + "-" + random;
+  let hash = 0;
+
+  for(let i = 0; i < texto.length; i++){
+    hash = ((hash << 5) - hash) + texto.charCodeAt(i);
+    hash |= 0;
+  }
+
+  return Math.abs(hash)
+    .toString(36)
+    .toUpperCase()
+    .padStart(4,"0")
+    .slice(-4);
+}
+
+function generarCodigoPartida(){
+  
+  const firma = crearFirma(score);
+  codigoPartida = "DNG-" + score + "-" + firma;
 }	
+	
+function verificarCodigoPartida(codigo){
+  const limpio = (codigo || "").trim().toUpperCase();
+
+  const partes = limpio.split("-");
+
+  if(partes.length !== 3) return false;
+  if(partes[0] !== "DNG") return false;
+
+  const puntaje = Number(partes[1]);
+  const firmaRecibida = partes[2];
+
+  if(!Number.isFinite(puntaje)) return false;
+
+  const firmaCorrecta = crearFirma(puntaje);
+
+  return firmaRecibida === firmaCorrecta;
+}
 
 function resetGame(){
   state = "playing";
@@ -3762,6 +3795,33 @@ function handlePreviewShortcut(e){
   if(code === "KeyM" || key === "m"){
     e.preventDefault(); toggleMute(); return true;
   }
+	
+	if(code === "KeyV" || key === "v"){
+  e.preventDefault();
+
+  const codigo = prompt("Ingresa el código de partida:");
+
+  if(!codigo) return true;
+
+  if(verificarCodigoPartida(codigo)){
+    const partes = codigo.toUpperCase().split("-");
+    const puntaje = partes[1];
+
+    alert(
+      "✅ CÓDIGO VÁLIDO\n\n" +
+      "Puntaje: " + puntaje + "\n" +
+      "Código: " + codigo.toUpperCase()
+    );
+  }else{
+    alert(
+      "❌ CÓDIGO NO VÁLIDO\n\n" +
+      "El código no coincide con la validación del juego."
+    );
+  }
+
+  return true;
+}
+	
   if(code === "KeyH" || key === "h"){
     e.preventDefault();
     debugHelpVisible = !debugHelpVisible;
