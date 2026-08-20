@@ -305,6 +305,8 @@ dikyFumiga.onerror = (e) => console.error("❌ Error cargando D5 fumigador", e);
 const bgm = document.getElementById("bgm");
 
 let state = "start";
+let codigoPartida = "";
+
 let score = 0, timeLeft = 60, combo = 0, bestCombo = 0, level = 1;
 let last = 0, spawnTimer = 0, shootTimer = 0, bossSpawned = false;
 let player = {x: W/2, y: H-165, w: 150, h: 165, targetX: W/2, hp: 3};
@@ -719,12 +721,22 @@ function burst(x,y,color,n=12){
 function addPickup(kind,x,y){
   pickups.push({kind,x,y,vy:110,r:28,wobble:rand(0,Math.PI*2)});
 }
+	
+function generarCodigoPartida(){
+  const random = Math.random()
+    .toString(36)
+    .substring(2,6)
+    .toUpperCase();
+
+  codigoPartida = "DNG-" + score + "-" + random;
+}	
 
 function resetGame(){
   state = "playing";
+  codigoPartida = "";
   gameWon = false;
   bossDefeated = false;
-  resultLocked = false;
+  resultLocked = false;	
   educationalPopup = null;
   educationalPopupShown = new Set();
   educationalPopupOpenedAt = 0;
@@ -967,6 +979,7 @@ function update(dt){
         bossDefeated = true;
         gameWon = true;
         state = "end";
+		generarCodigoPartida();
         resultLocked = true;
         saveBestScore(score);
         bgm.pause();
@@ -1020,6 +1033,7 @@ function update(dt){
         timeLeft = 0;
         gameWon = false;
         state = "end";
+		generarCodigoPartida();
         resultLocked = true;
         saveBestScore(score);
         bgm.pause();
@@ -1088,6 +1102,7 @@ function update(dt){
     timeLeft = 0;
     gameWon = false;
     state = "end";
+	generarCodigoPartida();
     resultLocked = true;
     saveBestScore(score);
     bgm.pause();
@@ -2107,6 +2122,7 @@ function fumigationHitTest(){
         bossDefeated = true;
         gameWon = true;
         state = "end";
+		generarCodigoPartida();
         resultLocked = true;
         saveBestScore(score);
         bgm.pause();
@@ -2997,12 +3013,12 @@ async function createResultBlob(){
 
     // Campaña "El Dengue Mata"
     if(logoDengue.complete && logoDengue.naturalWidth){
-      const maxW = 310;
-      const maxH = 112;
+      const maxW = 500;
+      const maxH = 180;
       const scale = Math.min(maxW/logoDengue.naturalWidth, maxH/logoDengue.naturalHeight);
       const dw = logoDengue.naturalWidth * scale;
       const dh = logoDengue.naturalHeight * scale;
-      c.drawImage(logoDengue,930-dw,125,dw,dh);
+      c.drawImage(logoDengue,930-dw,105,dw,dh);
     }
   }catch(e){}
 
@@ -3040,12 +3056,16 @@ async function createResultBlob(){
   c.fillStyle="#5a748a";
   c.font="700 25px Arial";
   c.fillText("Mejor puntaje: "+Math.max(score,getBestScore()),540,837);
+	
+  c.fillStyle="#0f6cbd";
+  c.font="900 24px Arial";
+  c.fillText("CÓDIGO: "+codigoPartida,540,872);
 
-  roundedRectCard(c,165,885,750,150,30, gameWon ? "#e7f9ef" : "#fff1f1");
+  roundedRectCard(c,165,910,750,150,30, gameWon ? "#e7f9ef" : "#fff1f1");
   const msg = gameWon
-    ? "¡Buen trabajo! Sin criaderos no hay dengue."
+    ? "¡Sin criaderos no hay mosquitos, sin mosquitos no hay dengue!"
     : "El dengue puede ser grave. Elimina criaderos y ante síntomas acude a un establecimiento de salud.";
-  drawWrappedOn(c,msg,540,935,650,38,"700 28px Arial","#14324a");
+  drawWrappedOn(c,msg,540,960,650,38,"700 28px Arial","#14324a");
 
   roundedRectCard(c,220,1080,640,86,43,"#13a3b8");
   c.fillStyle="#fff";
@@ -3480,9 +3500,13 @@ function drawEnd(){
   ctx.font="700 12px Arial";
   ctx.fillStyle="#5a748a";
   ctx.fillText("🏆 Mejor puntaje: "+Math.max(score,getBestScore()),W/2,404);
+	
+  ctx.font="900 11px Arial";
+  ctx.fillStyle="#0f6cbd";
+  ctx.fillText("CÓDIGO: "+codigoPartida,W/2,418);
 
   // MENSAJE
-  const msgY=420;
+  const msgY=430;
   ctx.fillStyle=fail ? "rgba(255,246,240,.99)" : "rgba(237,253,242,.99)";
   rr(42,msgY,W-84,54,16,true);
   ctx.strokeStyle=fail ? "rgba(255,137,77,.35)" : "rgba(47,158,68,.35)";
