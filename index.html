@@ -1218,7 +1218,7 @@ function drawHUD(){
   }
 
   miniCard(panelX+9,panelY+8,52,48,"NIVEL",String(level),"#0f6cbd",.012);
-  miniCard(panelX+66,panelY+8,65,48,"COMBO","x"+combo,combo>=5?"#ff8a00":"#13a3b8",combo>=5?.035:.012);
+  miniCard(panelX+66,panelY+8,65,48,"DENGUE-KO","x"+combo,combo>=5?"#ff8a00":"#13a3b8",combo>=5?.035:.012);
 
   ctx.textAlign = "left";
   ctx.font = "900 10px Arial";
@@ -3348,7 +3348,7 @@ for(let i=0;i<chips.length;i++){
 
   ctx.font = "10.5px Arial";
   ctx.fillStyle = "#13a3b8";
-  ctx.fillText("PREVIEW: H = atajos", W/2, 718);
+
 
   ctx.textAlign = "left";
 }
@@ -3778,7 +3778,6 @@ window.addEventListener("keyup", e=>{
 // Forzamos foco para facilitar los atajos durante desarrollo.
 window.addEventListener("load", ()=>{
   try{ window.focus(); canvas.focus(); }catch(e){}
-  showToast("Atajos activos: 1-9 · Q/W/E · H para ayuda");
 });
 document.addEventListener("pointerdown", ()=>{
   try{ canvas.focus(); }catch(e){}
